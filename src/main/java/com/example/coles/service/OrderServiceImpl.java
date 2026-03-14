@@ -2,7 +2,6 @@ package com.example.coles.service;
 
 import com.example.coles.api.OrderRequest;
 import com.example.coles.api.OrderResponse;
-import com.example.coles.api.ProcessRequest;
 import com.example.coles.domain.Order;
 import com.example.coles.domain.OrderStatus;
 import com.example.coles.repo.OrderRepository;
@@ -19,9 +18,11 @@ import java.util.stream.Collectors;
 public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository repository;
+    private final OrderProcessor orderProcessor;
 
-    public OrderServiceImpl(OrderRepository repository) {
+    public OrderServiceImpl(OrderRepository repository, OrderProcessor orderProcessor) {
         this.repository = repository;
+        this.orderProcessor = orderProcessor;
     }
 
     @Override
@@ -43,33 +44,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public OrderResponse update(UUID id, OrderRequest request) {
-        Order order = repository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
-
-        if (order.getStatus() != OrderStatus.PENDING) {
-            throw new InvalidOrderStateException("Only pending orders can be updated");
-        }
-
-        order.setCustomerName(request.getCustomerName());
-        order.setAmount(request.getAmount());
-        order.setUpdatedAt(LocalDateTime.now());
-        repository.save(order);
-        return toResponse(order);
-    }
-
-    @Override
-    public void delete(UUID id) {
-        Order order = repository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
-
-        if (order.getStatus() == OrderStatus.PROCESSING || order.getStatus() == OrderStatus.COMPLETED) {
-            throw new InvalidOrderStateException("Cannot delete processing or completed orders");
-        }
-
-        repository.delete(order);
-    }
-
-    @Override
-    public OrderResponse process(UUID id, ProcessRequest request) {
+    public OrderResponse process(UUID id) {
         Order order = repository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
 
         if (order.getStatus() != OrderStatus.PENDING) {
@@ -82,10 +57,7 @@ public class OrderServiceImpl implements OrderService {
         repository.save(order);
 
         try {
-            // Simulate processing work
-            if (request != null && request.isSimulateFailure()) {
-                throw new RuntimeException("Simulated failure");
-            }
+           orderProcessor.processOrder(order);
 
             // processing succeeded
             order.setStatus(OrderStatus.COMPLETED);
