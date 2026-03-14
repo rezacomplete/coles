@@ -131,10 +131,26 @@ class OrderServiceImplTest {
         when(orderRepository.findById(id)).thenReturn(Optional.empty());
 
         assertThrows(OrderNotFoundException.class, () -> orderService.delete(id));
-        assertThrows(OrderNotFoundException.class, () -> orderService.delete(id));
     }
 
-    //todo add test for delete when status processing or completed
+    @Test
+    void delete_whenStatusProcessingOrCompleted_throws() {
+        // processing
+        UUID pId = UUID.randomUUID();
+        Order processing = Order.create("P", new BigDecimal("5.00"));
+        processing.setStatus(OrderStatus.PROCESSING);
+        when(orderRepository.findById(pId)).thenReturn(Optional.of(processing));
+
+        assertThrows(InvalidOrderStateException.class, () -> orderService.delete(pId));
+
+        // completed
+        UUID cId = UUID.randomUUID();
+        Order completed = Order.create("C", new BigDecimal("6.00"));
+        completed.setStatus(OrderStatus.COMPLETED);
+        when(orderRepository.findById(cId)).thenReturn(Optional.of(completed));
+
+        assertThrows(InvalidOrderStateException.class, () -> orderService.delete(cId));
+    }
 
     //todo add test for delete when successful
 
