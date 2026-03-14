@@ -37,7 +37,7 @@ This project follows a simple layered architecture (typical for small Spring Boo
   - `Order` entity and `OrderStatus` enum.
 
 - API DTOs (`api` package)
-  - `OrderRequest`, `OrderResponse`, and `ProcessRequest` are used to decouple internal entity representation from external APIs.
+  - `OrderRequest` and `OrderResponse` are used to decouple internal entity representation from external APIs.
 
 - Error handling
   - `GlobalExceptionHandler` converts domain/service exceptions to appropriate HTTP responses (404, 409, 400, 500).
@@ -110,38 +110,12 @@ curl http://localhost:8080/api/orders
 curl http://localhost:8080/api/orders/<uuid>
 ```
 
-4. Update order
-
-- PUT /api/orders/{id}
-- Allowed only for PENDING orders
-
-```bash
-curl -X PUT http://localhost:8080/api/orders/<uuid> \
-  -H "Content-Type: application/json" \
-  -d '{"customerName":"New name","amount":10.0}'
-```
-
-5. Delete order
-
-- DELETE /api/orders/{id}
-- Not allowed for PROCESSING or COMPLETED orders (returns 409 Conflict)
-
-```bash
-curl -X DELETE http://localhost:8080/api/orders/<uuid>
-```
-
-6. Process order
+4. Process order
 
 - POST /api/orders/{id}/process
-- Accepts optional body: { "simulateFailure": true } to test failure handling
 
 ```bash
-curl -X POST http://localhost:8080/api/orders/<uuid>/process  -H "Content-Type: application/json" -d '{}'
-
-curl -s -X POST http://localhost:8080/api/orders/<ORDER_ID>/process \
-  -H "Content-Type: application/json" \
-  -d '{"simulateFailure": true}'
-
+curl -X POST http://localhost:8080/api/orders/<uuid>/process 
 ```
 
 Error responses return JSON with an `error` or `errors` field (see `GlobalExceptionHandler`). Validation failures for controller-level checks return 400 Bad Request with a short reason message.
