@@ -158,13 +158,11 @@ class OrderServiceImplTest {
         Order existing = Order.create("ToDelete", new BigDecimal("2.00"));
         existing.setStatus(OrderStatus.PENDING); // deletable
         when(orderRepository.findById(id)).thenReturn(Optional.of(existing));
-        
+
         orderService.delete(id);
 
         verify(orderRepository, times(1)).delete(existing);
     }
-
-    //todo add test for delete when successful
 
     @Test
     void process_successCompletes() {
