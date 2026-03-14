@@ -30,22 +30,18 @@ public class Order {
     private LocalDateTime updatedAt;
 
     public Order() {
-        // JPA
     }
 
-    // Factory constructor
     public static Order create(String customerName, BigDecimal amount) {
-        Order o = new Order();
-        o.id = UUID.randomUUID();
-        o.customerName = customerName;
-        o.amount = amount;
-        o.status = OrderStatus.PENDING;
-        o.createdAt = LocalDateTime.now();
-        o.updatedAt = o.createdAt;
-        return o;
+        Order order = new Order();
+        order.id = UUID.randomUUID();
+        order.customerName = customerName;
+        order.amount = amount;
+        order.status = OrderStatus.PENDING;
+        order.createdAt = LocalDateTime.now();
+        order.updatedAt = order.createdAt;
+        return order;
     }
-
-    // ...getters and setters...
 
     public UUID getId() {
         return id;

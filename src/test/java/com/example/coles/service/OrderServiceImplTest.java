@@ -18,31 +18,32 @@ import static org.mockito.Mockito.*;
 
 class OrderServiceImplTest {
 
-    private OrderRepository repo;
-    private OrderServiceImpl service;
+    private OrderRepository orderRepository;
+    private OrderServiceImpl orderService;
 
     @BeforeEach
     void setup() {
-        repo = mock(OrderRepository.class);
-        service = new OrderServiceImpl(repo);
+        orderRepository = mock(OrderRepository.class);
+        orderService = new OrderServiceImpl(orderRepository);
     }
 
     @Test
     void create_shouldSaveAndReturn() {
-        OrderRequest req = new OrderRequest();
-        req.setCustomerName("Alice");
-        req.setAmount(new BigDecimal("12.50"));
+        OrderRequest request = new OrderRequest();
+        request.setCustomerName("Alice");
+        request.setAmount(new BigDecimal("12.50"));
 
-        // when saved, repository returns same entity; capture save
-        when(repo.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+        Order order = Order.create(request.getCustomerName(), request.getAmount());
 
-        var resp = service.create(req);
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
 
-        assertThat(resp.getCustomerName()).isEqualTo("Alice");
-        assertThat(resp.getAmount()).isEqualByComparingTo(new BigDecimal("12.50"));
-        assertThat(resp.getStatus()).isEqualTo(OrderStatus.PENDING);
+        var result = orderService.create(request);
 
-        verify(repo, times(1)).save(any(Order.class));
+        assertThat(result.getCustomerName()).isEqualTo("Alice");
+        assertThat(result.getAmount()).isEqualByComparingTo(new BigDecimal("12.50"));
+        assertThat(result.getStatus()).isEqualTo(OrderStatus.PENDING);
+
+        verify(orderRepository, times(1)).save(any(Order.class));
     }
 
     @Test
@@ -50,37 +51,115 @@ class OrderServiceImplTest {
         UUID id = UUID.randomUUID();
         Order existing = Order.create("Bob", new BigDecimal("5.00"));
         existing.setStatus(OrderStatus.COMPLETED);
-        when(repo.findById(id)).thenReturn(Optional.of(existing));
+        when(orderRepository.findById(id)).thenReturn(Optional.of(existing));
 
-        OrderRequest req = new OrderRequest();
-        req.setCustomerName("Bob2");
-        req.setAmount(new BigDecimal("6.00"));
+        OrderRequest orderRequest = new OrderRequest();
+        orderRequest.setCustomerName("Bob2");
+        orderRequest.setAmount(new BigDecimal("6.00"));
 
-        assertThrows(InvalidOrderStateException.class, () -> service.update(id, req));
+        assertThrows(InvalidOrderStateException.class, () -> orderService.update(id, orderRequest));
     }
+
+    @Test
+    void update_whenOrderNotFound_throws() {
+        UUID id = UUID.randomUUID();
+        when(orderRepository.findById(id)).thenReturn(Optional.empty());
+
+        OrderRequest orderRequest = new OrderRequest();
+        orderRequest.setCustomerName("Nobody");
+        orderRequest.setAmount(new BigDecimal("1.00"));
+
+        assertThrows(OrderNotFoundException.class, () -> orderService.update(id, orderRequest));
+    }
+
+    @Test
+    void update_whenUpdatesAndSavesSuccessfully() {
+        UUID id = UUID.randomUUID();
+        Order existing = Order.create("Original", new BigDecimal("10.00"));
+        // ensure it's pending so update is allowed
+        existing.setStatus(OrderStatus.PENDING);
+
+        when(orderRepository.findById(id)).thenReturn(Optional.of(existing));
+        when(orderRepository.save(any(Order.class))).thenReturn(existing);
+
+        OrderRequest update = new OrderRequest();
+        update.setCustomerName("Updated Name");
+        update.setAmount(new BigDecimal("11.50"));
+
+        var result = orderService.update(id, update);
+
+        assertThat(result.getCustomerName()).isEqualTo("Updated Name");
+        assertThat(result.getAmount()).isEqualByComparingTo(new BigDecimal("11.50"));
+        assertThat(result.getStatus()).isEqualTo(OrderStatus.PENDING);
+
+        verify(orderRepository, times(1)).save(any(Order.class));
+    }
+
+    @Test
+    void process_whenOrderNotFound_throws() {
+        UUID id = UUID.randomUUID();
+        when(orderRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThrows(OrderNotFoundException.class, () -> orderService.process(id, new ProcessRequest()));
+    }
+
+    @Test
+    void process_whenStatusNotPending_throws() {
+        UUID id = UUID.randomUUID();
+        Order existing = Order.create("E", new BigDecimal("4.00"));
+        existing.setStatus(OrderStatus.PROCESSING);
+        when(orderRepository.findById(id)).thenReturn(Optional.of(existing));
+
+        assertThrows(InvalidOrderStateException.class, () -> orderService.process(id, new ProcessRequest()));
+    }
+
+    @Test
+    void process_whenSuccessful_savesProcessingThenCompleted() {
+        UUID id = UUID.randomUUID();
+        Order existing = Order.create("Success", new BigDecimal("7.00"));
+        existing.setStatus(OrderStatus.PENDING);
+        when(orderRepository.findById(id)).thenReturn(Optional.of(existing));
+
+        var result = orderService.process(id, new ProcessRequest());
+
+        assertThat(result.getStatus()).isEqualTo(OrderStatus.COMPLETED);
+    }
+
+    @Test
+    void delete_whenOrderNotFound_throws() {
+        UUID id = UUID.randomUUID();
+        when(orderRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThrows(OrderNotFoundException.class, () -> orderService.delete(id));
+        assertThrows(OrderNotFoundException.class, () -> orderService.delete(id));
+    }
+
+    //todo add test for delete when status processing or completed
+
+    //todo add test for delete when successful
 
     @Test
     void process_successCompletes() {
         UUID id = UUID.randomUUID();
         Order existing = Order.create("C", new BigDecimal("3.00"));
-        when(repo.findById(id)).thenReturn(Optional.of(existing));
-        when(repo.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(orderRepository.findById(id)).thenReturn(Optional.of(existing));
+        when(orderRepository.save(any(Order.class))).thenReturn(existing);
 
-        var resp = service.process(id, new ProcessRequest());
-        assertThat(resp.getStatus()).isEqualTo(OrderStatus.COMPLETED);
+        var result = orderService.process(id, new ProcessRequest());
+        assertThat(result.getStatus()).isEqualTo(OrderStatus.COMPLETED);
     }
 
     @Test
     void process_simulatedFailure_marksFailed() {
         UUID id = UUID.randomUUID();
         Order existing = Order.create("D", new BigDecimal("8.00"));
-        when(repo.findById(id)).thenReturn(Optional.of(existing));
-        when(repo.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(orderRepository.findById(id)).thenReturn(Optional.of(existing));
+        when(orderRepository.save(any(Order.class))).thenReturn(existing);
 
-        ProcessRequest req = new ProcessRequest();
-        req.setSimulateFailure(true);
+        ProcessRequest request = new ProcessRequest();
+        request.setSimulateFailure(true);
 
-        var resp = service.process(id, req);
+        var resp = orderService.process(id, request);
         assertThat(resp.getStatus()).isEqualTo(OrderStatus.FAILED);
     }
 }
