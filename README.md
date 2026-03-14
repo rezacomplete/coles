@@ -74,12 +74,6 @@ Or run the packaged jar:
 java -jar target/coles-0.0.1-SNAPSHOT.jar
 ```
 
-H2 console (for development):
-
-- URL: http://localhost:8080/h2-console
-- JDBC URL: `jdbc:h2:mem:coles`
-- User: `sa` (no password)
-
 ---
 
 ## API (summary + examples)
@@ -143,6 +137,11 @@ curl -X DELETE http://localhost:8080/api/orders/<uuid>
 
 ```bash
 curl -X POST http://localhost:8080/api/orders/<uuid>/process  -H "Content-Type: application/json" -d '{}'
+
+curl -s -X POST http://localhost:8080/api/orders/<ORDER_ID>/process \
+  -H "Content-Type: application/json" \
+  -d '{"simulateFailure": true}'
+
 ```
 
 Error responses return JSON with an `error` or `errors` field (see `GlobalExceptionHandler`). Validation failures for controller-level checks return 400 Bad Request with a short reason message.
@@ -171,3 +170,23 @@ Run tests with:
 - `src/main/java/com/example/coles/repo` — JPA repositories
 - `src/main/java/com/example/coles/domain` — entity models and enums
 - `src/main/java/com/example/coles/api` — request/response DTOs
+
+---
+
+## Docker: build and run
+
+Build the Docker image locally:
+
+```bash
+# from the project root
+docker build -t coles-app:latest .
+```
+
+Run the image as a container (exposes port 8080):
+
+```bash
+docker run --rm -p 8080:8080 --name coles-app coles-app:latest
+```
+
+Notes:
+- The `Dockerfile` performs a Maven build with `-DskipTests` to speed up image builds. Run the test suite locally before building images if you want to catch test failures earlier:
