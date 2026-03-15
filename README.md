@@ -1,6 +1,6 @@
 # Coles Orders Service
 
-A small REST backend implemented in Java + Spring Boot with an in-memory H2 database. It implements a simple order lifecycle (PENDING → PROCESSING → COMPLETED / FAILED) and exposes endpoints to create, retrieve, list, update, delete and process orders.
+A small REST backend implemented in Java + Spring Boot with an in-memory H2 database. It implements a simple order lifecycle (PENDING → PROCESSING → COMPLETED / FAILED) and exposes endpoints to create, retrieve, list and process orders.
 
 ---
 
