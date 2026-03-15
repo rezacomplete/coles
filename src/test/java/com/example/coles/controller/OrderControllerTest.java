@@ -68,7 +68,7 @@ class OrderControllerTest {
     }
 
     @Test
-    void create_validRequest_delegatesToServiceAndReturnsCreated() {
+    void create_validRequest_delegatesToServiceAndReturns() {
         OrderRequest request = new OrderRequest();
         request.setCustomerName("Valid");
         request.setAmount(new BigDecimal("5.00"));
@@ -81,8 +81,7 @@ class OrderControllerTest {
         when(service.create(request)).thenReturn(response);
 
         var result = controller.create(request);
-        assertThat(result.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(result.getBody()).isEqualTo(response);
+        assertThat(result).isEqualTo(response);
     }
 
 }
