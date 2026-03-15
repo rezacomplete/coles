@@ -89,7 +89,7 @@ Base path: `/api/orders`
 Example curl:
 
 ```bash
-curl -s -X POST http://localhost:8080/api/orders \
+curl -X POST http://localhost:8080/api/orders \
   -H "Content-Type: application/json" \
   -d '{"customerName":"Alice","amount":12.5}'
 ```
