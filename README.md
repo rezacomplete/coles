@@ -26,7 +26,7 @@ This project follows a simple layered architecture (typical for small Spring Boo
 
 - Service layer (`service` package)
   - Contains business rules and orchestrates persistence operations.
-  - Responsible for lifecycle transitions and validation of state transitions (for example, only `PENDING` orders can be updated or processed).
+  - Responsible for lifecycle transitions and validation of state transitions.
   - Example: `OrderServiceImpl`.
 
 - Persistence / Repository layer (`repo` package)
@@ -83,8 +83,6 @@ Base path: `/api/orders`
 1. Create order
 
 - POST /api/orders
-- Body: { "customerName": "Alice", "amount": 12.5 }
-- Successful response: 201 Created with body containing the order (id, status, timestamps)
 
 Example curl:
 
@@ -126,7 +124,7 @@ Error responses return JSON with an `error` or `errors` field (see `GlobalExcept
 
 Unit tests are in `src/test/java`. Key test coverage:
 
-- `OrderServiceImplTest` covers service behaviors and lifecycle rules (create, update, process success/failure, delete cases).
+- `OrderServiceImplTest` covers service behaviors and lifecycle rules.
 - `OrderControllerTest` checks controller-level validation and that valid requests are delegated to the service.
 
 Run tests with:
